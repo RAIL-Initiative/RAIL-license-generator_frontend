@@ -9,12 +9,18 @@
 // 1. Global Variables
 //////////////////////////
 
-const dataPath = './assets/RAIL-LG_v0-2.json';
-const preamblePath = './assets/';
+// API Paths
+const url = "http://localhost/api/v1/license";
+const restrictionPath = '/restriction/';
+const domainPath = '/domain/';
+const sourcePath = '/source/';
+// const preamblePath = './assets/';
 
 //Specify the Mandatory Use Restrictions source using the lock variable
-const lock = 'RAIL (IEEE)';
+// Here, 5 is the ID for the source "RAIL (IEEE)"
+const lock = 5;
 
+// Variables for final License construction, default is OpenRAIL 
 let selectedLicenseType = 'OpenRAIL';
 let specification = { length: 0, data: false, application: false, model: false, sourcecode: false };
 let permissions = {derivatives: true, researchOnly: false};
@@ -22,20 +28,20 @@ let artefact_s = '';
 let rawPreamble = '';
 let injectReadyPreamble = '';
 let specifiedDomains = [];
+let licenseLog = {};
 
+// Variables for UI Events
 let agreed = false;
 let named = false;
 let picked = false;
-
-let licenseLog = {};
 
 //////////////////////////
 // 2. Server Functions
 //////////////////////////
 
-async function dataAvailable() {
+async function backendAvailable() {
 	try {
-		let response = await fetch(dataPath, {
+		let response = await fetch(url, {
 			mode: 'cors'
 		});
 
@@ -47,26 +53,107 @@ async function dataAvailable() {
 
 async function getData() {
 	try {
-		let response = await fetch(dataPath, {
-			mode: 'cors'
+		let restrictionFetch = await fetch(url + restrictionPath, {
+		    method: 'GET',
+			mode: 'cors',
+		    headers: {
+        		'Content-Type': 'application/json',
+			},
 		});
-		const content = await response.json();
-		processResponse(content);
+		let domainFetch = await fetch(url + domainPath, {
+		    method: 'GET',
+			mode: 'cors',
+		    headers: {
+        		'Content-Type': 'application/json',
+			},
+		});
+		let sourceFetch = await fetch(url + sourcePath, {
+		    method: 'GET',
+			mode: 'cors',
+		    headers: {
+        		'Content-Type': 'application/json',
+			},
+		});
+
+		let restrictions = await restrictionFetch.json();
+		let domains = await domainFetch.json();
+		let sources = await sourceFetch.json();
+
+		processResponse(restrictions, domains, sources);
 	} catch (error){
 		console.log(error.message);
 	}
 }
 
-async function loadPreambleText(type) {
-	try {
-		let response = await fetch(preamblePath + type.toString() + ".txt", {
-			mode: 'cors'
-		});
-		if(response.ok) {
-			const txt = await response.text().then((text) => {
-				buildLicense(text);
-			});
+async function postLicense() {
+
+	document.getElementById('previewTooltip').style.display = "none";
+
+	const timestamp = new Date();
+
+	let additionalRestrictionsList = document.getElementById('additional-restrictions');
+	let specificationString = '';
+
+	if(Object.values(specification).includes(true)) {
+		let specificationParent = document.getElementById('specificationParent');
+
+		for(let i = 1; i < specificationParent.children.length; i++) {
+			if(specificationParent.children[i].style.display === "inline") {
+				specificationString += specificationParent.children[i].innerText;
+			}
 		}
+
+		console.log(specificationString);
+	}
+
+	// add Name
+	licenseLog = {
+		"timestamp": timestamp.toISOString(),
+		// "name": artefact_s.toString(),
+		"artifact": specificationString.toString(),
+		"license": selectedLicenseType.toString(),
+		"data": specification.data,
+		"application": specification.application,
+		"model": specification.model,
+		"sourcecode": specification.sourcecode,
+		"derivatives": permissions.derivatives,
+		"researchOnly": permissions.researchOnly,
+		"specifiedDomain_ids": [],
+		"additionalRestriction_ids": []
+	}
+
+	if(additionalRestrictionsList.children.length > 0) {
+		let addRes = [];
+		let tempDom = [];
+		for(let child of additionalRestrictionsList.children) {
+			addRes.push(child.dataset.id);
+			tempDom.push(child.dataset.domain_id);
+		}
+		licenseLog.additionalRestriction_ids = addRes;
+
+		let addDom = [... new Set(tempDom)];
+		licenseLog.specifiedDomain_ids = addDom;
+	}
+
+	// console.log(specifiedDomains);
+	console.log(JSON.stringify(licenseLog));
+
+	try {
+		let response = await fetch(url, {
+			method: 'POST',
+			mode: 'cors',
+		    headers: {
+        		'Content-Type': 'application/json',
+			},
+      		body: JSON.stringify(licenseLog)
+		});
+		let license = await response.json();
+		console.log(license);
+		// if(response.ok) {
+		// 	const license = await response.json().then((json) => {
+		// 		console.log(json);
+		// 	});
+		// }
 	} catch (error){
 		console.log(error + " " + error.message);
 	}
@@ -95,7 +182,7 @@ window.addEventListener("load", (event) => {
 		window.location.href = window.location.href.replace('http:', 'https:');
 
 	} else if (window.location.protocol == "https:" || isLocalhost(window.location.href)) {
-		dataAvailable().then((response) => {
+		backendAvailable().then((response) => {
 			if(response.status == '200') {
 			    var elems = document.querySelectorAll('.modal');
 			    let options = {
@@ -109,72 +196,57 @@ window.addEventListener("load", (event) => {
 	}
 });
 
-function processResponse(d) {
+function processResponse(r, d, s) {
 	let lockedRestrictions = document.getElementById('locked-restrictions');
 
-	let domains = Object.values(d.Domain);
-	let sources = Object.values(d.Source);
-	let restrictions = Object.values(d.Restriction)
+	console.log(d);
 
-	let data = [];
-
-	for (let i = 0; i < domains.length; i++) {
-		const entry = {
-			domain: domains[i].toString(),
-			restriction: restrictions[i].toString(),
-			source: sources[i].toString()
-		};
-		data.push(entry);
-	}
-
-	domains = [... new Set(domains)];
-	sources = [... new Set(sources)];
-
-	let options = [];
-
-	for(let i = 0; i < domains.length; i++) {
+	//Add domains as options to select element
+	for (let child of d) {
 		let option = document.createElement('option');
-		option.value = domains[i].toString();
-		option.innerHTML = domains[i].toString();
+		option.value = child.name.toString();
+		option.innerHTML = child.name.toString();
 
 		additionalRestrictions.appendChild(option);
 	}
 
 	M.FormSelect.init(additionalRestrictions);
 
-	for(let i = 0; i < data.length; i++) {
-		if(data[i].source == lock) {
+	//Add Restrictions
+	for (let child of r) {
+		if(child.source_id === lock) {
 			let lockedRestriction = document.createElement("li");
-			lockedRestriction.innerHTML = data[i].restriction.toString();
+			lockedRestriction.innerHTML = child.text.toString();
 
 			lockedRestrictions.appendChild(lockedRestriction);
 		} else {
-		 	let additionalRestriction = document.createElement('p');
-		 	additionalRestriction.classList.add(data[i].domain.toString());
+			let additionalRestriction = document.createElement('p');
+		 	additionalRestriction.classList.add(d[child.domain_id-1].name.toString());
 
 		 	let label = document.createElement('label');
 		 	let span = document.createElement('span');
-		 	span.innerHTML = data[i].restriction.toString();
+		 	span.innerHTML = child.text.toString();
 
 		 	let chip1 = document.createElement('div');
 		 	chip1.classList.add('chip');
-		 	chip1.innerHTML = data[i].source.toString();
+		 	chip1.innerHTML = s[child.source_id-1].name.toString();
 		 	span.appendChild(chip1);
 
 
 		 	let chip2 = document.createElement('div');
 		 	chip2.classList.add('chip');
 		 	chip2.classList.add('domain');
-		 	chip2.innerHTML = data[i].domain.toString();
+		 	chip2.innerHTML = d[child.domain_id-1].name.toString();
 		 	span.appendChild(chip2);
 
 		 	label.appendChild(span);
 
 		 	let input = document.createElement('input');
 		 	input.type = 'checkbox';
-		 	input.dataset.domain = data[i].domain.toString();
-		 	input.dataset.id = i;
-		 	input.dataset.restriction = data[i].restriction.toString();
+		 	input.dataset.domain = d[child.domain_id-1].name.toString();
+		 	input.dataset.domain_id = d[child.domain_id-1].id;
+		 	input.dataset.id = child.id;
+		 	input.dataset.restriction = child.text.toString();
 		 	input.onclick = function(event) {
 				event.stopImmediatePropagation();
 				processRestriction(this);
@@ -221,6 +293,7 @@ function processRestriction(el) {
 		let newRestriction = document.createElement('li');
 		newRestriction.dataset.id = el.dataset.id;
 		newRestriction.dataset.domain = el.dataset.domain;
+		newRestriction.dataset.domain_id = el.dataset.domain_id;
 		newRestriction.innerHTML = el.dataset.restriction.toString();
 		additionalRestrictionsList.appendChild(newRestriction);
 
@@ -239,6 +312,7 @@ function processRestriction(el) {
 		let newRestriction = document.createElement('li');
 		newRestriction.dataset.id = el.dataset.id;
 		newRestriction.dataset.domain = el.dataset.domain;
+		newRestriction.dataset.domain_id = el.dataset.domain_id;
 		newRestriction.innerHTML = el.dataset.restriction.toString();
 		additionalRestrictionsList.appendChild(newRestriction);
 
@@ -364,6 +438,8 @@ function processSpecification(el) {
 
 function processPermission(el) {
 	let permission = document.getElementById(el.dataset.permission.toString());
+	document.getElementById("license-type").innerHTML = el.dataset.license.toString();
+
 	if(el.checked) {
 		permission.innerHTML = el.dataset.copy.toString() + "&#10003;";
 		permissions[el.dataset.permission] = true;
@@ -419,9 +495,9 @@ function showPage(el){
 		} else {
 			console.log(child.id + " is active.")
 			child.style.display = 'block';
-			if(child.id === "export") {
+			if(child.id === "finish") {
 				indicator.style.visibility = "hidden";
-				loadPreambleText(selectedLicenseType);
+				postLicense();
 			} else {
 				indicator.style.visibility = "visible";
 			}
@@ -441,46 +517,43 @@ function showPage(el){
 // 5. Download Functions
 //////////////////////////
 
-function buildLicense(txt) {
-	rawPreamble = txt;
+function buildLicense(format) {
+	document.getElementById('previewTooltip').style.display = "none";
 
 	const timestamp = new Date();
-
-	document.getElementById('previewTooltip').style.display = "none";
 
 	let additionalRestrictionsList = document.getElementById('additional-restrictions');
 	let specificationParent = document.getElementById('specificationParent');
 
 	licenseLog = {
-		"timestamp": timestamp.toUTCString(),
-		"artifact": artefact_s.toString(),
+		"timestamp": timestamp.toISOString(),
+		// "name": artefact_s.toString(),
 		"license": selectedLicenseType.toString(),
-		"specification": {
-			"data": specification.data,
-			"application": specification.application,
-			"model": specification.model,
-			"sourcecode": specification.sourcecode
-		},
-		"permissions": {
-			"derivatives": permissions.derivatives,
-			"researchOnly": permissions.researchOnly
-		}
+		"artifact": artefact_s.toString(),
+		"data": specification.data,
+		"application": specification.application,
+		"model": specification.model,
+		"sourcecode": specification.sourcecode,
+		"derivatives": permissions.derivatives,
+		"researchOnly": permissions.researchOnly
 	}
 
+	console.log(specifiedDomains);
 
-	rawPreamble = rawPreamble.replace('$license_type$', licenseLog.license.toString() + specificationParent.innerText);
-	let injectReadyPreamble = document.createElement('div');
-	injectReadyPreamble.id = "injectReadyPreamble";
-	injectReadyPreamble.innerHTML = rawPreamble;
+	// rawPreamble = 
 
-	if(specifiedDomains.length > 0) {
-		licenseLog.specifiedDomains = specifiedDomains;
-	}
+	// if(specifiedDomains.length > 0) {
+	// 	let addDom = {};
+	// 	for(let child of specifiedDomains.children) {
+	// 		addDom.push(child.toString());
+	// 	}
+	// 	licenseLog.specifiedDomains = addDom;
+	// }
 
 	if(additionalRestrictionsList.children.length > 0) {
-		let addRes = [];
+		let addRes = {};
 		for(let child of additionalRestrictionsList.children) {
-			addRes.push(child.innerHTML);
+			addRes.push(child.dataset.id);
 		}
 		licenseLog.additionalRestrictions = addRes;
 	}
@@ -509,9 +582,6 @@ function buildLicense(txt) {
 
 	let preamble = document.getElementById('preamble');
 	preamble.appendChild(injectReadyPreamble);
-
-
-	console.log(licenseLog);
 }
 
 

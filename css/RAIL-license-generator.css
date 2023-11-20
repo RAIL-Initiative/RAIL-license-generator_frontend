@@ -254,7 +254,8 @@ h6 {
 }
 
 #restrictionBlock {
-	height: 75%;
+	max-height: 75% !important;
+    overflow-y: clip;
 }
 
 #mandatoryRestrictionsPreview {
