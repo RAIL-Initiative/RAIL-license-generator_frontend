@@ -121,7 +121,7 @@ async function postLicense() {
 
 	let restrictionsListHTML = document.getElementById('restrictionsMasterList').getElementsByClassName('restriction');
 	let restrictionsList = Array.prototype.slice.call(restrictionsListHTML);
-	console.log(restrictionsList);
+
 	let specificationString = '';
 	let restriction_ids = [];
 
@@ -552,6 +552,7 @@ function checkCondition(i) {
 function showPage(el){
 	let pages = document.getElementById('pages');
 	let pagination = document.getElementById('paginationLinks').children;
+	pagination = Array.prototype.slice.call(pagination);
 	let progress = document.getElementById('progressBar');
 	let blink = document.getElementById('blink');
 	let active = el.dataset.link;
@@ -564,10 +565,13 @@ function showPage(el){
 		} else {
 			console.log(child.id + " is active.")
 			child.style.display = 'block';
+
 			if(child.id === "finish") {
 				blink.style.visibility = "hidden";
 				postLicense();
-			} else {
+			} else if (child.id === "setup" ) {
+				blink.style.visibility = "visible";
+			} else if (child.id === "customize") {
 				blink.style.visibility = "visible";
 			}
 		}
@@ -579,6 +583,23 @@ function showPage(el){
 		} else {
 			child.classList.remove('active');
 		}
+	}
+}
+
+function arrowChange(el) {
+	let pagination = document.getElementById('paginationLinks').children;
+	pagination = Array.prototype.slice.call(pagination);
+	let activePage;
+	for(let child of pagination) {
+		if(child.classList.contains("active")) {
+			activePage = child;
+		}
+	}
+
+	if(el.id === "chevron-left" && activePage.previousElementSibling != null && pagination.indexOf(activePage) != 0) {
+		showPage(activePage.previousElementSibling.children[0])
+	} else if (el.id === "chevron-right" && activePage.nextElementSibling != null && pagination.indexOf(activePage) != 2) {
+		showPage(activePage.nextElementSibling.children[0]);
 	}
 }
 

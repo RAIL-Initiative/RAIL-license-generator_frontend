@@ -2,13 +2,14 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, interactive-widget=overlays-content">
 	<title>RAIL License Generator</title>
 	<link rel="icon" type="image/x-icon" href="./assets/favicon.png">
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="./css/materialize.min.css">
 	<link rel="stylesheet" type="text/css" href="./css/RAIL-license-generator.css">
 
@@ -45,20 +46,27 @@
 		</div>
 	</div>
 
-	<div class="row vertical-wrapper" id="form">
+	<div class="row valign-wrapper" id="form">
 
-		<div class="col s1"></div>
+		<!-- <div class="col s1"></div> -->
 
-		<div class="col s5" id="sidebar">
-			<div id="paginationBlock" class="row">
-				<ul class="pagination col s12" id="paginationLinks">
-					<li class="active"><a href="#!" data-progress="33" data-link="setup" id="setupClick" onclick="showPage(this)">SETUP</a></li>
-					<li class="waves-effect"><a href="#!" data-progress="66" data-link="customize" onclick="showPage(this)">CUSTOMIZE</a></li>
-					<li class="waves-effect"><a href="#!" data-progress="100" data-link="finish" onclick="showPage(this)">FINISH</a></li>
-				</ul>
-
-				<div class="progress">
-					<div class="determinate" id="progressBar" style="width: 33%"></div>
+		<div class="col s7" id="sidebar">
+			<div id="paginationBlock" class="row valign-wrapper">
+				<div class="col s1">
+					<a href="#!" onclick="arrowChange(this)" id="chevron-left"><i class="material-icons">chevron_left</i></a>
+				</div>
+				<div class="col s10">
+					<ul class="pagination col s12" id="paginationLinks">
+						<li class="active"><a href="#!" data-progress="33" data-link="setup" id="setupClick" onclick="showPage(this)">SETUP</a></li>
+						<li class="waves-effect"><a href="#!" data-progress="66" data-link="customize" onclick="showPage(this)">CUSTOMIZE</a></li>
+						<li class="waves-effect"><a href="#!" data-progress="100" data-link="finish" onclick="showPage(this)">FINISH</a></li>
+					</ul>
+					<div class="progress">
+						<div class="determinate" id="progressBar" style="width: 33%"></div>
+					</div>
+				</div>
+				<div class="col s1">
+					<a href="#!" onclick="arrowChange(this)" id="chevron-right"><i class="material-icons">chevron_right</i></a>
 				</div>
 			</div>
 			<div id="pages" class="row">
@@ -67,8 +75,7 @@
 						<div class="row">
 							<h6>License Type:<span class="info tooltipped" data-position="top" data-tooltip="OpenRAILs are the default choice, if you would like to restrict free use choose a RAIL license."> &#9432;</span></h6>
 						</div>
-						<!-- Make OpenRAIL default -->
-						<div class="row" id="licensing-options">
+						<div class="row section" id="licensing-options">
 							<div class="col s4">
 								<div class="card blue-grey lighten-5">
 									<div class="card-content" onclick="processLicenseChoice(this)" data-active="true" data-index="0" data-license="OpenRAIL">
@@ -104,7 +111,6 @@
 							</div>
 						</div>
 						<div class="row"></div>
-
 						<div class="row">
 							<div class="row">
 								<h6>Licensed Artifact(s):</h6>
@@ -200,17 +206,16 @@
 				<div id="finish" class="row">
 					<div class="sidetext section">
 						<div class="col s12">
-							Here, there are various options for exporting your custom license. Note that when downloading the license, the preview on the right will be frontloaded with an adapted full license text including legal definitions and paragraphs depending on the choices you have made. Again, always consult an attorney before releasing artifact(s) with a license generated here. Please get in touch with us at <a href="mailto:responsibleailicenses@gmail.com">responsibleailicenses[at]gmail.com</a> for feedback and suggestions.
+							Here, there are various options for exporting your custom license. Note that when downloading the license, the preview on the right will be frontloaded with an adapted full license text including legal definitions and paragraphs depending on the choices you have made. Again, always consult an attorney before releasing artifact(s) with a license generated here. Please get in touch with us at <a href="mailto:responsibleailicenses@gmail.com">responsibleailicenses[at]gmail.com</a> for feedback and suggestions. For further reference, see our <a href="http://arxiv.org/abs/2402.05979" target="_blank">preprint on Standardized Customization of Use Restrictions</a>.
 						</div>
-						<div class="row"></div>
-						<div class="row vertical-wrapper">
+						<div class="row">
 							<div class="row">
 								<div class="input-field col s6">
 									<select id="download" data-id="0" class="browser-default" onchange="setDownload(this.dataset.id, this.value)">
 										<option value="" disabled selected>Select license format</option>
 										<option value="markdown">Markdown</option>
 										<option value="plain">Raw Text</option>
-										<option value="rtf">Rich Text</option>
+										<!-- <option value="rtf">Rich Text</option> -->
 										<option value="latex">Latex</option>
 									</select>
 								</div>
@@ -232,29 +237,34 @@
 							</div>
 							<div class="col s2"></div>
 						</div>
+							<div class="row">
+							<div class="col s6">
+								<h6>Generate QR Code:</h6>
+							</div>
+							<div class="col s2"></div>
+							<div class="col s2">
+								<a id="downloadButton" class="waves-effect waves-light btn" onclick="downloadQR()" target="_blank">Download</a>
+							</div>
+							<div class="col s2"></div>
+						</div>
 						<div class="row"></div>
+						<div class="divider"></div>
 						<div class="row"></div>
 						<div class="row" id="referenceBlock">
-							<div class="card blue-grey lighten-5">
-								<div class="card-content">
-									<span class="card-title license-choice">Reference</span>
-									<pre class="bib">
-										@misc{mcduff_standardization_2024,
-										title = {On the {Standardization} of {Behavioral} {Use} {Clauses} and {Their} {Adoption} for {Responsible} {Licensing} of {AI}},
-										url = {http://arxiv.org/abs/2402.05979},
-										doi = {10.48550/arXiv.2402.05979},
-										urldate = {2024-02-13},
-										publisher = {arXiv},
-										author = {McDuff, Daniel and Korjakow, Tim and Cambo, Scott and Benjamin, Jesse Josua and Lee, Jenny and Jernite, Yacine and Ferrandis, Carlos Muñoz and Gokaslan, Aaron and Tarkowski, Alek and Lindley, Joseph and Cooper, A. Feder and Contractor, Danish},
-										month = feb,
-										year = {2024},
-									}
+							<div class="row">
+								<pre class="bib">
+@misc{mcduff_standardization_2024,
+	title = {On the {Standardization} of {Behavioral} {Use} {Clauses} and {Their} {Adoption} for {Responsible} {Licensing} of {AI}},
+	url = {http://arxiv.org/abs/2402.05979},
+	doi = {10.48550/arXiv.2402.05979},
+	urldate = {2024-02-13},
+	publisher = {arXiv},
+	author = {McDuff, Daniel and Korjakow, Tim and Cambo, Scott and Benjamin, Jesse Josua and Lee, Jenny and Jernite, Yacine and Ferrandis, Carlos Muñoz and Gokaslan, Aaron and Tarkowski, Alek and Lindley, Joseph and Cooper, A. Feder and Contractor, Danish},
+	month = feb,
+	year = {2024},
+}
 								</pre>
 							</div>
-							<div class="card-action">
-								See our <a href="http://arxiv.org/abs/2402.05979" target="_blank">PREPRINT</a>
-							</div>
-						</div>
 					</div>
 				</div>
 			</div>
@@ -264,20 +274,21 @@
 
 	<div class="col s1"></div>
 
-	<div class="col s4 vertical-wrapper section" id="preview">
+	<div class="col s4 valign-wrapper section" id="preview">
 		<div id="previewHeader">
-			<div class="row">
+			<div class="row section valign-wrapper" id="indicator">
+				<div class="col s6"><span id="blink"></span> LIVE</div>
+				<div class="col s6">Partial License Preview</div>
 			</div>
-
 			<div id="licenseScoping" class="row">
-				<div class="col s4" id="derivatives">Free Use &#10003;</div>
-				<div class="col s4"></div>
-				<div class="col s4" id="researchOnly">Research Only  &#215;</div>
+				<div class="col s6" id="derivatives">Free Use &#10003;</div>
+				<!-- <div class="col s4"></div> -->
+				<div class="col s6" id="researchOnly">Research Only  &#215;</div>
 			</div>
 
-			<div class="row vertical-wrapper" id="banner">
+			<div class="row valign-wrapper" id="banner">
 			</div>
-			<div class="row license-title vertical-wrapper">
+			<div class="row license-title valign-wrapper">
 				<div id="licenseSpecification">
 					<span id="artefact_title">&lt;Licensed Artifact(s)&gt;</span>
 					<span>&#32;</span>
@@ -294,15 +305,10 @@
 				<p>Attachment A:<span id="previewTooltip" class="info tooltipped" data-position="top" data-tooltip="The full license text will be generated on export."> &#9432;</span><p>
 					<p>USE RESTRICTIONS</p>
 				</div>
-				<div class="restriction-header">You agree not to Use the Artifact(s) in any of the following ways:</div>
+				<div id="restriction-header">You agree not to Use the Artifact or its Derivatives in any of the following ways:</div>
 				<div id="restrictionsPreview" class="row">
 					<ol id="restrictionsMasterList" type="1"></ol>
 				</div>
-			</div>
-
-			<div class="row section" id="indicator">
-				<div class="col s6"><span id="blink"></span> LIVE</div>
-				<div class="col s6">Partial License Preview</div>
 			</div>
 		</div>
 		<div class="col s1"></div>
