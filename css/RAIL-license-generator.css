@@ -212,6 +212,19 @@ h6 {
     margin-bottom: 1rem;
 }
 
+#download {
+	background-color: #f5f5f5 !important; 
+    color: #607d8b !important;
+    background-color: #f5f5f5 !important;
+    color: #607d8b !important;
+    font-family: 'Source Code Pro', monospace;
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: 1rem;
+    padding: 0rem 1.5rem 0rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
 /*PREVIEW WINDOW*/
 
 #preview {
@@ -226,7 +239,7 @@ h6 {
 	align-items: center;
 	display: flex;
 	flex-wrap: nowrap;
-	justify-content: flex-start;
+	justify-content: space-between;
 	align-content: center;
 	flex-direction: column;
 }
@@ -254,29 +267,21 @@ h6 {
 }
 
 #restrictionBlock {
-	max-height: 75% !important;
-    overflow-y: clip;
+	max-height: 80% !important;
+    overflow-y: scroll;
 }
 
-#mandatoryRestrictionsPreview {
+#restrictionsPreview {
 	display: flex;
-	overflow-y: scroll;
+	overflow-y: clip;
     flex-direction: column;
     justify-content: flex-start;
     align-self: flex-start;
     margin-bottom: 1vh;
-    max-height: 50%;
 }
 
-#additionalRestrictionsPreview {
-	display: none;
-	width: 100% !important;
-	overflow-y: scroll;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-self: flex-start;
-    margin-bottom: 1vh;
-    max-height: 50%;
+#restrictionsMasterList {
+	font-size: 1rem;
 }
 
 .restrictions {
@@ -335,6 +340,17 @@ h6 {
     margin: 1em 0 0.5em 0;
 }
 
+#referenceBlock {
+	color: #607d8b;
+}
+
+.bib {
+	text-wrap: wrap !important;
+	line-height: normal;
+/*	padding: 1rem;*/
+/*	background-color: #f0f5f5;*/
+	font-size: 0.8rem;
+}
 
 #paginationBlock {
     height: 10%;
@@ -400,8 +416,6 @@ h6 {
 }
 
 #banner {    
-	width: inherit;
-	text-align: center;
 	vertical-align: middle !important;
 	display: flex;
 	justify-content: center;
@@ -416,13 +430,17 @@ h6 {
 }
 
 #indicator {
-	color: slategray;
-	font-family: 'Source Code Pro', monospace;
-	font-weight: 400;
-	font-size: 0.8rem;
+    color: slategray;
+    font-family: 'Source Code Pro', monospace;
+    font-weight: 400;
+    font-size: 0.8rem;
+    width: 100%;
+    height: auto;
+    max-height: 5% !important;
+    text-align: center;
 }
 
-.blink {
+#blink {
 	width: 0.5rem;
 	height: 0.5rem;
 	background-color: salmon;
