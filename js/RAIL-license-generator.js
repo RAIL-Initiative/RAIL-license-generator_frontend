@@ -54,8 +54,7 @@ let specifiedDomains = [];
 
 // Current License setup is stored in licenseLog and compared with previousLog to only post to server if new
 let licenseLog = {};
-let previousLog = {};
-let sameLog = false;
+let previousLog = null;
 
 // Variables for UI Events
 let agreed = false;
@@ -124,7 +123,6 @@ async function postLicense(l) {
 
 	// timestamp license Object
 	deepCopy.timestamp = timestamp.toISOString();
-	console.log(deepCopy);
 
 	try {
 		let response = await fetch(url, {
@@ -656,17 +654,15 @@ function arrowChange(el) {
 
 function checkLicense() {
 
-	// Check whether a new license has been generated
-	sameLog = (licenseLog === previousLog);
-
-	if(!sameLog) {
-		console.log("Generate new license.");
-
-		// post license to server
+	// only post if there are changes
+	// compare with deep comparison
+	if(JSON.stringify(licenseLog) !== JSON.stringify(previousLog)) {
 		postLicense(licenseLog);
-	} else {
-		console.log("No changes.");
-	}	
+	}
+	else {
+		console.log("No changes to license");
+	
+	}
 }
 
 //////////////////////////
