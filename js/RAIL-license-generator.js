@@ -3,10 +3,11 @@
 // WG "Tooling & Procedural Governance"
 // RAIL Initative
 // https://licenses.ai
-// MIT License
+// Apache 2.0 License
 
 // This frontend prototype (RAIL License Generator v1) uses the following libraries:
 // html2canvas by Niklas von Hertzen. https://html2canvas.hertzen.com/. Licensed under the MIT License.
+// qrcodejs by davidshimjs. https://github.com/davidshimjs/qrcodejs. Licensed under the MIT License.
 // materialize.css by Alvin Wang, Alan Chang, Alex Mark and Kevin Louie. https://materializecss.com/. Licensed under the MIT License.
 
 // This document is structured as follows:
@@ -50,7 +51,11 @@ let specification = { length: 0, data: false, application: false, model: false, 
 let permissions = {derivatives: true, researchOnly: false};
 let artefact_s = '';
 let specifiedDomains = [];
+
+// Current License setup is stored in licenseLog and compared with previousLog to only post to server if new
 let licenseLog = {};
+let previousLog = {};
+let sameLog = false;
 
 // Variables for UI Events
 let agreed = false;
@@ -113,49 +118,13 @@ async function getData() {
 }
 
 // Post the generated license to the backend
-async function postLicense() {
-
-	document.getElementById('previewTooltip').style.display = "none";
-
+async function postLicense(l) {
 	const timestamp = new Date();
+	const deepCopy = JSON.parse(JSON.stringify(l));;
 
-	let restrictionsListHTML = document.getElementById('restrictionsMasterList').getElementsByClassName('restriction');
-	let restrictionsList = Array.prototype.slice.call(restrictionsListHTML);
-
-	let specificationString = '';
-	let restriction_ids = [];
-
-	if(Object.values(specification).includes(true)) {
-		let specificationParent = document.getElementById('specificationParent');
-
-		for(let i = 1; i < specificationParent.children.length; i++) {
-			if(specificationParent.children[i].style.display === "inline") {
-				specificationString += specificationParent.children[i].innerText;
-			}
-		}
-	}
-
-	// License Object
-	licenseLog = {
-		"timestamp": timestamp.toISOString(),
-		"name": artefact_s.toString(),
-		"artifact": specificationString.toString(),
-		"license": selectedLicenseType.toString(),
-		"data": specification.data,
-		"application": specification.application,
-		"model": specification.model,
-		"sourcecode": specification.sourcecode
-	}
-
-	if(restrictionsList.length > 0) {
-		for(let child of restrictionsList) {
-			restriction_ids.push(parseInt(child.dataset.id));
-		}
-	}
-
-	licenseLog.restriction_ids = restriction_ids;
-
-	// console.log(JSON.stringify(licenseLog));
+	// timestamp license Object
+	deepCopy.timestamp = timestamp.toISOString();
+	console.log(deepCopy);
 
 	try {
 		let response = await fetch(url, {
@@ -164,16 +133,20 @@ async function postLicense() {
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify(licenseLog)
+			body: JSON.stringify(deepCopy)
 		});
-		
+
 		// Handle Rate Limiting
-		if (response.status_code == 429) {
-			alert(response.json()["detail"]);
+		if (!response.ok) {
+			alert(response);
 		} else {
 			let license = await response.json();
 
 			document.getElementById('download').dataset.id = license.id;
+			console.log("Created new license with the id " + license.id.toString());
+
+			// prepare for next check (line 655) 
+			previousLog = JSON.parse(JSON.stringify(licenseLog));
 			downloadReady = true;
 		}
 	} catch (error){
@@ -346,6 +319,8 @@ function processLockedRestrictions(clr, d) {
 		li.appendChild(ol);
 		restrictionsList.appendChild(li);
 	}
+
+	 updateRestrictionLog();
 }
 
 //////////////////////////
@@ -440,6 +415,23 @@ function processRestriction(el) {
 			specifiedDomains.push(el.dataset.domain);
 		}
 	}
+
+	updateRestrictionLog();
+}
+
+function updateRestrictionLog(){
+	let restrictionsListHTML = document.getElementById('restrictionsMasterList').getElementsByClassName('restriction');
+	let restrictionsList = Array.prototype.slice.call(restrictionsListHTML);
+
+	let restriction_ids = [];
+
+	if(restrictionsList.length > 0) {
+		for(let child of restrictionsList) {
+			restriction_ids.push(parseInt(child.dataset.id));
+			}
+	}
+
+	licenseLog.restriction_ids = restriction_ids;
 }
 
 function processLicenseChoice(el) {
@@ -471,6 +463,8 @@ function processNaming(el) {
 		document.getElementById('artefact_title').innerHTML = el.toString();
 		named = true;
 		artefact_s = el.toString();
+		licenseLog.name = artefact_s;
+
 		if(named) {
 			document.getElementById('modal-agree').classList.remove('disabled'); 
 		}
@@ -487,9 +481,11 @@ function processSpecification(el) {
 			specificationParent.children[el.dataset.order].style.display = "inline";
 			specification.length = 1;
 			specification[el.dataset.specification] = true;
+			licenseLog[el.dataset.specification] = true;
 		} else if (specification.length >= 1) {
 			specificationParent.children[el.dataset.order].style.display = "inline";
 			specification[el.dataset.specification] = true;
+			licenseLog[el.dataset.specification] = true;
 			specification.length++;
 		}
 	} else if (!el.checked) {
@@ -497,11 +493,27 @@ function processSpecification(el) {
 		specificationParent.children[el.dataset.order].style.display = "none";
 		specification.length--;
 		specification[el.dataset.specification] = false;
+		licenseLog[el.dataset.specification] = false;
 
 		if(specification.length === 0) {
 			specificationParent.children[0].style.display = "none";
 			specification.length = 0;
 		}
+	}
+
+
+
+	if(Object.values(specification).includes(true)) {
+		let specificationString = '';
+		let specificationParent = document.getElementById('specificationParent');
+
+		for(let i = 1; i < specificationParent.children.length; i++) {
+			if(specificationParent.children[i].style.display === "inline") {
+				specificationString += specificationParent.children[i].innerText;
+			}
+		}
+
+		licenseLog.artifact = specificationString;
 	}
 }
 
@@ -535,6 +547,7 @@ function checkCondition(i) {
 				item.parentElement.classList.remove('lighten-2');
 				item.parentElement.classList.add('lighten-5');
 				selectedLicenseType = item.dataset.license.toString();
+				licenseLog.license = selectedLicenseType;
 			}
 		} else {
 			if(item.nodeName === "INPUT") {
@@ -552,44 +565,82 @@ function checkCondition(i) {
 function showPage(el){
 	let pages = document.getElementById('pages');
 	let pagination = document.getElementById('paginationLinks').children;
-	pagination = Array.prototype.slice.call(pagination);
 	let progress = document.getElementById('progressBar');
+	pagination = Array.prototype.slice.call(pagination);
 	let blink = document.getElementById('blink');
 	let active = el.dataset.link;
 
-	progress.style.width = el.dataset.progress + "%";
-
 	for (let child of pages.children) {
 		if(child.id != active.toString()) {
+			
 			child.style.display = 'none';
-		} else {
-			console.log(child.id + " is active.")
-			child.style.display = 'block';
 
-			if(child.id === "finish") {
-				blink.style.visibility = "hidden";
-				postLicense();
-			} else if (child.id === "setup" ) {
+		} else if(child.id === active.toString()) {
+
+			progress.style.width = el.dataset.progress + "%";
+			
+			if (child.id === "setup" ) {
+
+				for(let child of pagination) {
+					if(child === el.parentElement) {
+						child.classList.add('active');
+					} else {
+						child.classList.remove('active');
+					}
+				}
+
+				console.log(child.id + " is active.");
+				child.style.display = 'block';
 				blink.style.visibility = "visible";
+				document.getElementById('previewTooltip').style.display = "inline";
+			
+			} else if (child.id != "setup" && !Object.values(specification).includes(true)) {
+
+				M.toast({html: 'Specify a type of artefact to license before proceeding!'});
+				showPage(document.getElementById('setupClick'));
+				document.getElementById('previewTooltip').style.display = "inline";
+			
 			} else if (child.id === "customize") {
+
+				for(let child of pagination) {
+					if(child === el.parentElement) {
+						child.classList.add('active');
+					} else {
+						child.classList.remove('active');
+					}
+				}
+
+				console.log(child.id + " is active.");
+				child.style.display = 'block';
 				blink.style.visibility = "visible";
+
+			} else if (child.id === "finish") {
+
+				for(let child of pagination) {
+					if(child === el.parentElement) {
+						child.classList.add('active');
+					} else {
+						child.classList.remove('active');
+					}
+				}
+
+				console.log(child.id + " is active.");
+				child.style.display = 'block';
+				blink.style.visibility = "hidden";
+				document.getElementById('previewTooltip').style.display = "none";
+
+				checkLicense();
 			}
 		}
 	}
 
-	for(let child of pagination) {
-		if(child === el.parentElement) {
-			child.classList.add('active');
-		} else {
-			child.classList.remove('active');
-		}
-	}
 }
 
 function arrowChange(el) {
 	let pagination = document.getElementById('paginationLinks').children;
 	pagination = Array.prototype.slice.call(pagination);
 	let activePage;
+
 	for(let child of pagination) {
 		if(child.classList.contains("active")) {
 			activePage = child;
@@ -603,6 +654,21 @@ function arrowChange(el) {
 	}
 }
 
+function checkLicense() {
+
+	// Check whether a new license has been generated
+	sameLog = (licenseLog === previousLog);
+
+	if(!sameLog) {
+		console.log("Generate new license.");
+
+		// post license to server
+		postLicense(licenseLog);
+	} else {
+		console.log("No changes.");
+	}	
+}
+
 //////////////////////////
 // 5. Download Functions
 //////////////////////////
@@ -610,22 +676,28 @@ function arrowChange(el) {
 // Configure download format of license
 function setDownload(id, type) {
 	let button = document.getElementById('downloadButton');
+	let buttonQR = document.getElementById('downloadButtonQR');
 
 	if(downloadReady) {
 		let link = url + id +"/generate?media_type=text/" + type.toString();
-		console.log(link);
+
 		button.href = link;
+		buttonQR.dataset.link = link;
 
 		if(button.classList.contains('disabled')) {
 			button.classList.remove('disabled');
 			button.classList.add('active');
+		}
+		if(buttonQR.classList.contains('disabled')) {
+			buttonQR.classList.remove('disabled');
+			buttonQR.classList.add('active');
 		}
 	}
 }
 
 // One-shot download link for PNG
 function downloadURI(uri, name) {
-    var link = document.createElement("a");
+    let link = document.createElement("a");
     link.download = name;
     link.href = uri;
     link.click();
@@ -636,14 +708,14 @@ function downloadPNG() {
 	console.log("Download Image Banner");
 	let typeString = document.getElementById('license-type').innerHTML.toString();
 	let nameString = document.getElementById('artefact_title').innerHTML.toString();
-	let filename = 'banner_' + typeString + '_' + nameString + '.png';
+	let filename = nameString + '_' + typeString + '_Banner.png';
 	let banner = document.getElementById('banner');
 
 	let clone = banner.cloneNode(true);
 	clone.style.scale = "2";
 	clone.style.width = "fit-content";
 
-	document.body.appendChild(clone);
+	document.body.prepend(clone);
 
     html2canvas(clone, {
     	useCORS: true,
@@ -654,4 +726,27 @@ function downloadPNG() {
             downloadURI(bannerImage, filename);
         }
     );
+}
+
+function downloadQR(link) {
+	let buttonQR = document.getElementById('downloadButtonQR');
+	let typeString = document.getElementById('license-type').innerHTML.toString();
+	let nameString = document.getElementById('artefact_title').innerHTML.toString();
+	let filename = nameString + '_' + typeString + '_QR.png';
+
+	if(downloadReady && !buttonQR.classList.contains('disabled')) {
+		const tempDiv = document.createElement('div');
+
+		let qrCode = new QRCode(tempDiv, {
+			text: link.toString(),
+			width: 256,
+			height: 256,
+			colorDark : "#000000",
+			colorLight : "#ffffff",
+			correctLevel : QRCode.CorrectLevel.H
+		});
+
+		let qrImg = tempDiv.children[0];
+		downloadURI(qrImg.toDataURL("image/png"), filename);
+	}
 }
