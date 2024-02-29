@@ -136,7 +136,15 @@ async function postLicense(l) {
 
 		// Handle Rate Limiting
 		if (!response.ok) {
-			alert(response);
+			msg = await response.json();
+			console.log(msg);
+			if (response.status === 429) {
+				alert(msg.error);
+			}
+			else {
+				alert(`Error: ${response.status} ${msg.detail}`);
+			}
+			return false;
 		} else {
 			let license = await response.json();
 
@@ -146,10 +154,12 @@ async function postLicense(l) {
 			// prepare for next check (line 655) 
 			previousLog = JSON.parse(JSON.stringify(licenseLog));
 			downloadReady = true;
+			return true;
 		}
 	} catch (error){
 		console.error(error + " " + error.message);
 	}
+	return false;
 }
 
 //////////////////////////
@@ -613,7 +623,7 @@ function showPage(el){
 				blink.style.visibility = "visible";
 
 			} else if (child.id === "finish") {
-
+				
 				for(let child of pagination) {
 					if(child === el.parentElement) {
 						child.classList.add('active');
@@ -657,11 +667,11 @@ function checkLicense() {
 	// only post if there are changes
 	// compare with deep comparison
 	if(JSON.stringify(licenseLog) !== JSON.stringify(previousLog)) {
-		postLicense(licenseLog);
+		return postLicense(licenseLog);
 	}
 	else {
 		console.log("No changes to license");
-	
+		return true;
 	}
 }
 
