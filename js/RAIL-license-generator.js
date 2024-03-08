@@ -27,7 +27,7 @@
 // const url = "http://localhost/api/v1/license/";
 
 // For deployment
-const url = "//api.generator.licenses.ai/api/v1/license/";
+const url = "//localhost/api/v1/license/";
 
 const restrictionPath = 'restriction/';
 const domainPath = 'domain/';
@@ -560,7 +560,7 @@ function checkCondition(i) {
 		} else {
 			if(item.nodeName === "INPUT") {
 				item.checked = false;
-				document.getElementById(item.dataset.permission.toString()).innerHTML = item.dataset.copy.toString() + " &#215;";
+				document.getElementById(item.dataset.permission.toString()).innerHTML = "";
 				permissions[item.dataset.permission] = false;
 			} else if (item.nodeName === "DIV") {
 				item.parentElement.classList.remove('lighten-5');
