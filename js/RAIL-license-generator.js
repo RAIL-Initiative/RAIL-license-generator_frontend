@@ -27,7 +27,7 @@
 // const url = "http://localhost/api/v1/license/";
 
 // For deployment
-const url = "//localhost/api/v1/license/";
+const url = "//api.generator.licenses.ai/api/v1/license/";
 
 const restrictionPath = 'restriction/';
 const domainPath = 'domain/';
