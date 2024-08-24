@@ -479,6 +479,22 @@ function processNaming(el) {
 	}
 }
 
+function processProjectURL(el) {
+	if(el.toString().length > 0) {
+		document.getElementById('project_url').innerHTML = el.toString();
+		artefact_s = el.toString();
+		licenseLog.project_url = artefact_s;
+	}
+}
+
+function processProjectAdditionalInformation(el) {
+	if(el.toString().length > 0) {
+		document.getElementById('project_additional_information').innerHTML = el.toString();
+		artefact_s = el.toString();
+		licenseLog.additional_information = artefact_s;
+	}
+}
+
 function processSpecification(el) {
 	let specificationParent = document.getElementById('specificationParent');
 

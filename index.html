@@ -178,6 +178,25 @@
 							</div>
 						</div>
 
+						<div class="row">
+							<div class="row">
+								<h6>Project Information:</h6>
+							</div>
+							<p></p>
+							<div class="row setupCheck">
+								<div class="col s6">
+									<div class="input-field">
+										<label for="project_url">Project URL</label>
+										<input id="project_url" type="url" onchange="processProjectURL(this.value)" aria-required="false" required="false" pattern="(https?://|git@).*">
+									</div>
+									<div class="input-field">
+										<label for="project_additional_info">Additional Information</label>
+										<input id="project_additional_info" type="text" onchange="processProjectAdditionalInformation(this.value)" aria-required="false" required="false">
+									</div>
+								</div>
+							</div>
+						</div>
+
 					</div>
 				</div>
 
